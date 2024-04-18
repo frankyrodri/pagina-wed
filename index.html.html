@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tomar Foto con Fecha, Hora y Ubicación</title>
+</head>
+<body>
+  <h1>Tomar Foto con Fecha, Hora y Ubicación</h1>
+  <button id="take-photo">Tomar Foto</button>
+  <img id="photo-preview" src="" alt="Foto tomada">
+  <p id="datetime-info"></p>
+  <p id="location-info"></p>
+  
+  <script>
+    const takePhotoButton = document.getElementById('take-photo');
+    const photoPreview = document.getElementById('photo-preview');
+    const datetimeInfo = document.getElementById('datetime-info');
+    const locationInfo = document.getElementById('location-info');
+    
+    takePhotoButton.addEventListener('click', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        const chunks = [];
+
+        mediaRecorder.addEventListener('dataavailable', event => {
+          chunks.push(event.data);
+        });
+
+        mediaRecorder.addEventListener('stop', async () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          const videoURL = URL.createObjectURL(blob);
+          photoPreview.src = videoURL;
+          stream.getTracks().forEach(track => track.stop());
+
+          const currentDatetime = new Date();
+          const formattedDatetime = currentDatetime.toLocaleString();
+          datetimeInfo.textContent = 'Fecha y Hora: ' + formattedDatetime;
+
+          try {
+            const position = await getCurrentPosition();
+            const { latitude, longitude } = position.coords;
+            locationInfo.textContent = 'Ubicación: ' + latitude + ', ' + longitude;
+          } catch (error) {
+            console.error('Error al obtener la ubicación:', error);
+            locationInfo.textContent = 'No se pudo obtener la ubicación';
+          }
+        });
+
+        mediaRecorder.start();
+        setTimeout(() => {
+          mediaRecorder.stop();
+        }, 5000); // Grabar durante 5 segundos
+      } catch (error) {
+        console.error('Error al acceder a la cámara:', error);
+      }
+    });
+
+    async function getCurrentPosition() {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+      });
+    }
+  </script>
+</body>
+</html>
